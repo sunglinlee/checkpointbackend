@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run --name checkpoint-db -e MYSQL_DATABASE=checkpoint -e MYSQL_ROOT_PASSWORD='1@%sa1298s126%^!D' -p 3306:3306 -d mysql:latest
