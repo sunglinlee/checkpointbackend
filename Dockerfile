@@ -1,6 +1,6 @@
 # ---- 第一階段：建置階段 (Build Stage) ----
 # 使用官方的 Maven 映像檔作為建置環境，包含 JDK 17
-FROM maven:3.8-openjdk-11 AS build
+FROM maven:3.8-openjdk-17 AS build
 
 # 設定工作目錄
 WORKDIR /app
