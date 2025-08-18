@@ -1,0 +1,44 @@
+steps:
+  # 步驟 1: 使用 Maven 將應用程式打包成 JAR 檔
+  - name: 'maven:3.8-openjdk-11'
+    entrypoint: 'mvn'
+    args: ['clean', 'package', '-DskipTests'] # 略過測試以加速建置，您可以自行決定是否啟用
+
+  # 步驟 2: 建置 Docker 映像檔
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+      - '.'
+
+  # 步驟 3: 將 Docker 映像檔推送到 Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+
+  # 步驟 4: 將新映像檔部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated' # 允許未經驗證的呼叫，請根據您的安全性需求調整
+
+# 這個設定能讓後續步驟使用此映像檔
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+
+# 定義替代變數
+substitutions:
+  _SERVICE_NAME: checkpoint-backend  # 替換成您的 Cloud Run 服務名稱
+  _REGION: asia-east1                    # 替換成您的部署地區
+  _REPOSITORY: checkpoint2cicd   # 替換成您的 Artifact Registry 存放區名稱
+  _IMAGE_NAME: checkpoint-be  # 替換成您想要的映像檔名稱
