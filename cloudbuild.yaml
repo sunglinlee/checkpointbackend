@@ -33,6 +33,10 @@ steps:
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
 
+# options 區塊來指定日誌記錄行為
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 
 # 定義替代變數
 substitutions:
