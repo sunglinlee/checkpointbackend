@@ -1,10 +1,7 @@
 steps:
-  # 步驟 1: 使用 Maven 將應用程式打包成 JAR 檔
-  - name: 'maven:3.8-openjdk-11'
-    entrypoint: 'mvn'
-    args: ['clean', 'package', '-DskipTests'] # 略過測試以加速建置，您可以自行決定是否啟用
-
-  # 步驟 2: 建置 Docker 映像檔
+  # 步驟 1: 使用 Dockerfile 建置容器映像檔
+  # $PROJECT_ID: Cloud Build 會自動代入您的專案 ID
+  # $COMMIT_SHA: Cloud Build 會自動代入這次提交的 Git SHA 值，用來當作映像檔的唯一標籤
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -12,29 +9,30 @@ steps:
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
       - '.'
 
-  # 步驟 3: 將 Docker 映像檔推送到 Artifact Registry
+  # 步驟 2: 將建置好的映像檔推送到 Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
 
-  # 步驟 4: 將新映像檔部署到 Cloud Run
+  # 步驟 3: 將這個新映像檔部署到 Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
       - 'run'
       - 'deploy'
-      - '${_SERVICE_NAME}'
+      - '${_SERVICE_NAME}' # 您要部署的 Cloud Run 服務名稱
       - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
       - '--region'
-      - '${_REGION}'
+      - '${_REGION}' # 您希望部署在哪個地區
       - '--platform'
       - 'managed'
-      - '--allow-unauthenticated' # 允許未經驗證的呼叫，請根據您的安全性需求調整
+      - '--allow-unauthenticated' # 允許未經授權的公開存取，如果您的 API 需要登入，請移除此行
 
-# 這個設定能讓後續步驟使用此映像檔
+# 這個設定讓部署步驟可以存取到建置好的映像檔
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+
 
 # 定義替代變數
 substitutions:
