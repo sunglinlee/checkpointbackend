@@ -18,7 +18,7 @@ RUN mvn package -DskipTests
 
 # ---- 第二階段：正式運行階段 (Runtime Stage) ----
 # 使用一個更輕量的 JRE 映像檔來運行應用程式，讓最終映像檔更小、更安全
-FROM amazoncorretto:17-jre-slim
+FROM eclipse-temurin:17-jre-focal
 
 # 設定工作目錄
 WORKDIR /app
