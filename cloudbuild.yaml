@@ -24,11 +24,21 @@ steps:
         
         # 請將 'YOUR_BACKEND_DIR/' 替換成您的後端程式碼實際所在的目錄名稱
         # 例如：如果您的後端程式碼在 repo 的 'backend/' 目錄下，請將此處改為 'backend/'
+        # 重要的提示：確保 Dockerfile 位於此目錄中，或者調整 Docker build 命令以指向正確的 Dockerfile 路徑。
         if echo "$CHANGED_FILES" | grep -q 'YOUR_BACKEND_DIR/'; then
           echo "Changes detected in backend directory. Proceeding with build and deploy."
           
           # 執行 Docker 建置。`$_REGION` 等變數是內建的，可以直接使用。
-          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA .
+          # 由於 Dockerfile 預設會在當前目錄下查找，請確保您的 Dockerfile 位於 'YOUR_BACKEND_DIR/' 內，
+          # 並且在執行此步驟前，您已經將工作目錄切換到該目錄，或明確指定 Dockerfile 路徑。
+          # 以下假設您的 Cloud Build 觸發器配置為在倉庫根目錄執行，且 Dockerfile 在 'YOUR_BACKEND_DIR/' 下。
+          # 如果您的 Dockerfile 不在根目錄，您可能需要調整 `docker build` 命令的上下文或使用 `dir` 屬性。
+          # 例如，如果 `YOUR_BACKEND_DIR/` 是 `backend/`，並且 Dockerfile 在 `backend/Dockerfile`，
+          # 您可以考慮在 `docker build` 命令中添加 `--file=./backend/Dockerfile ./backend`。
+          
+          # 將以下 Docker build 命令的最後一個參數 (context path) 設為您的後端目錄。
+          # 假設您的 Dockerfile 位於 YOUR_BACKEND_DIR/Dockerfile
+          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA ./YOUR_BACKEND_DIR/
           
           # 將建置好的映像檔推送到 Artifact Registry
           docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA
