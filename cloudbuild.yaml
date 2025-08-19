@@ -1,21 +1,24 @@
 steps:
   # 步驟 1: 取得這次提交中所有變動的檔案列表
-  # 這個步驟會比較 HEAD 和 HEAD^ 之間的差異，並將所有變動檔案的路徑輸出到一個檔案中。
+  # 這個步驟會比較 HEAD 和 HEAD^ 之間的差異，並將所有變動檔案的路徑輸出到一個檔案中，以便後續步驟讀取。
+  # 由於 Cloud Build 的每個步驟都可以在同一個工作區 (`/workspace`) 中讀寫檔案，
+  # 這是解決自定義變數問題的最佳方式。
   - name: 'gcr.io/cloud-builders/git'
     id: 'get-changed-files'
     entrypoint: 'bash'
     args: ['-c', 'git diff HEAD^ HEAD --name-only > /workspace/changed_files.txt']
 
   # 步驟 2: 條件式地建置與部署
-  # 這個步驟會讀取變動檔案列表，並判斷您的後端目錄是否有變動。
+  # 這個步驟會讀取上一個步驟寫入的變動檔案列表，並判斷您的後端目錄是否有變動。
   # 如果有，則執行 Docker 建置、推送和 Cloud Run 部署的流程。
-  # 這樣可以避免在前端或其他不相關檔案變動時，重新建置整個後端映像檔。
+  # 我們直接在腳本中執行 docker 和 gcloud 命令，而不是透過外部參數傳遞變數。
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'conditional-build-and-deploy'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
+        # 使用 cat 來讀取上一個步驟寫入的檔案
         CHANGED_FILES=$(cat /workspace/changed_files.txt)
         echo "Detected changed files: $CHANGED_FILES"
         
@@ -24,7 +27,7 @@ steps:
         if echo "$CHANGED_FILES" | grep -q 'YOUR_BACKEND_DIR/'; then
           echo "Changes detected in backend directory. Proceeding with build and deploy."
           
-          # 執行 Docker 建置
+          # 執行 Docker 建置。`$_REGION` 等變數是內建的，可以直接使用。
           docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA .
           
           # 將建置好的映像檔推送到 Artifact Registry
