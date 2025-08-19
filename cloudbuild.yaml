@@ -1,111 +1,38 @@
 steps:
-  # 步驟 1: 檢查文件變更
-  - name: 'gcr.io/cloud-builders/git'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        # 獲取上一次成功部署的 commit SHA
-        LAST_DEPLOYED_SHA=$(gcloud run services describe ${_SERVICE_NAME} --region=${_REGION} --format="value(metadata.annotations.\"run.googleapis.com/commit-sha\")" || echo "")
-        
-        if [ -z "$LAST_DEPLOYED_SHA" ]; then
-          echo "No previous deployment found, proceeding with full deployment"
-          echo "DEPLOY=true" > /workspace/deploy_decision.env
-        else
-          echo "Last deployed SHA: $LAST_DEPLOYED_SHA"
-          echo "Current SHA: $COMMIT_SHA"
-          
-          # 檢查指定路徑的文件是否有變更
-          CHANGED_FILES=$(git diff --name-only $LAST_DEPLOYED_SHA..$COMMIT_SHA)
-          echo "Changed files: $CHANGED_FILES"
-          
-          # 定義需要觸發部署的路徑模式
-          DEPLOY_PATTERNS="${_DEPLOY_PATTERNS}"
-          
-          SHOULD_DEPLOY=false
-          for pattern in $DEPLOY_PATTERNS; do
-            if echo "$CHANGED_FILES" | grep -q "$pattern"; then
-              echo "Found changes in $pattern, will deploy"
-              SHOULD_DEPLOY=true
-              break
-            fi
-          done
-          
-          if [ "$SHOULD_DEPLOY" = true ]; then
-            echo "DEPLOY=true" > /workspace/deploy_decision.env
-          else
-            echo "DEPLOY=false" > /workspace/deploy_decision.env
-            echo "No relevant changes detected, skipping deployment"
-          fi
-        fi
-
-  # 步驟 2: 條件性建置容器映像檔
+  # 步驟 1: 建置容器映像檔
   - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        source /workspace/deploy_decision.env
-        if [ "$DEPLOY" = "true" ]; then
-          echo "Building Docker image..."
-          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA .
-        else
-          echo "Skipping Docker build - no deployment needed"
-        fi
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$COMMIT_SHA'
+      - '.'
 
-  # 步驟 3: 條件性推送映像檔
+  # 步驟 2: 推送映像檔
   - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        source /workspace/deploy_decision.env
-        if [ "$DEPLOY" = "true" ]; then
-          echo "Pushing Docker image..."
-          docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA
-        else
-          echo "Skipping Docker push - no deployment needed"
-        fi
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$COMMIT_SHA'
 
-  # 步驟 4: 條件性部署到 Cloud Run
+  # 步驟 3: 部署到 Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
+    entrypoint: 'gcloud'
     args:
-      - '-c'
-      - |
-        source /workspace/deploy_decision.env
-        if [ "$DEPLOY" = "true" ]; then
-          echo "Deploying to Cloud Run..."
-          gcloud run deploy ${_SERVICE_NAME} \
-            --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA \
-            --region=${_REGION} \
-            --platform=managed \
-            --allow-unauthenticated \
-            --update-annotations="run.googleapis.com/commit-sha=$COMMIT_SHA"
-          echo "Deployment completed successfully"
-        else
-          echo "Skipping Cloud Run deployment - no changes detected"
-        fi
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image=${_REGION}-docker.pkg.dev/$$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
 
-# 條件性映像檔輸出
 images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/$$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$COMMIT_SHA'
 
-# 日誌設定
 options:
   logging: CLOUD_LOGGING_ONLY
-  # 啟用 Git 操作
-  env:
-    - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
 
-# 替代變數
 substitutions:
   _SERVICE_NAME: checkpoint-backend
   _REGION: asia-east1
   _REPOSITORY: checkpoint2cicd
   _IMAGE_NAME: checkpoint-be
-  # 定義觸發部署的文件路徑模式（空格分隔）- Maven 專案適用
-  _DEPLOY_PATTERNS: 'src/ pom.xml Dockerfile *.yml *.yaml *.properties'
-  
-# 觸發器設定（建議在 Cloud Build 觸發器中配置）
-# 僅在 master 分支有 push 時觸發
