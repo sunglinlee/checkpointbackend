@@ -38,7 +38,7 @@ steps:
           
           # 將以下 Docker build 命令的最後一個參數 (context path) 設為您的後端目錄。
           # 假設您的 Dockerfile 位於 YOUR_BACKEND_DIR/Dockerfile
-          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA ./YOUR_BACKEND_DIR/
+          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA ./
           
           # 將建置好的映像檔推送到 Artifact Registry
           docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA
