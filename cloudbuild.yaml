@@ -1,35 +1,46 @@
 steps:
-  # 步驟 1: 使用 Dockerfile 建置容器映像檔
-  # $PROJECT_ID: Cloud Build 會自動代入您的專案 ID
-  # $COMMIT_SHA: Cloud Build 會自動代入這次提交的 Git SHA 值，用來當作映像檔的唯一標籤
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
-      - '.'
+  # 步驟 1: 取得這次提交中所有變動的檔案列表
+  # 這個步驟會比較 HEAD 和 HEAD^ 之間的差異，並將所有變動檔案的路徑輸出到一個檔案中。
+  - name: 'gcr.io/cloud-builders/git'
+    id: 'get-changed-files'
+    entrypoint: 'bash'
+    args: ['-c', 'git diff HEAD^ HEAD --name-only > /workspace/changed_files.txt']
 
-  # 步驟 2: 將建置好的映像檔推送到 Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
-
-  # 步驟 3: 將這個新映像檔部署到 Cloud Run
+  # 步驟 2: 條件式地建置與部署
+  # 這個步驟會讀取變動檔案列表，並判斷您的後端目錄是否有變動。
+  # 如果有，則執行 Docker 建置、推送和 Cloud Run 部署的流程。
+  # 這樣可以避免在前端或其他不相關檔案變動時，重新建置整個後端映像檔。
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    id: 'conditional-build-and-deploy'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - '${_SERVICE_NAME}' # 您要部署的 Cloud Run 服務名稱
-      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
-      - '--region'
-      - '${_REGION}' # 您希望部署在哪個地區
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated' # 允許未經授權的公開存取，如果您的 API 需要登入，請移除此行
+      - '-c'
+      - |
+        CHANGED_FILES=$(cat /workspace/changed_files.txt)
+        echo "Detected changed files: $CHANGED_FILES"
+        
+        # 請將 'YOUR_BACKEND_DIR/' 替換成您的後端程式碼實際所在的目錄名稱
+        # 例如：如果您的後端程式碼在 repo 的 'backend/' 目錄下，請將此處改為 'backend/'
+        if echo "$CHANGED_FILES" | grep -q 'YOUR_BACKEND_DIR/'; then
+          echo "Changes detected in backend directory. Proceeding with build and deploy."
+          
+          # 執行 Docker 建置
+          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA .
+          
+          # 將建置好的映像檔推送到 Artifact Registry
+          docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA
+          
+          # 將新映像檔部署到 Cloud Run
+          gcloud run deploy ${_SERVICE_NAME} \
+            --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA \
+            --region=${_REGION} \
+            --platform=managed \
+            --allow-unauthenticated
+        else
+          echo "No changes detected in backend directory. Skipping build and deploy."
+        fi
 
-# 這個設定讓部署步驟可以存取到建置好的映像檔
+# 這個設定讓 Cloud Build 能夠知道最終的映像檔是哪個，並能夠正確處理相關權限。
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
 
@@ -37,10 +48,9 @@ images:
 options:
   logging: CLOUD_LOGGING_ONLY
 
-
 # 定義替代變數
 substitutions:
-  _SERVICE_NAME: checkpoint-backend  # 替換成您的 Cloud Run 服務名稱
-  _REGION: asia-east1                    # 替換成您的部署地區
-  _REPOSITORY: checkpoint2cicd   # 替換成您的 Artifact Registry 存放區名稱
-  _IMAGE_NAME: checkpoint-be  # 替換成您想要的映像檔名稱
+  _SERVICE_NAME: checkpoint-backend   # 替換成您的 Cloud Run 服務名稱
+  _REGION: asia-east1                 # 替換成您的部署地區
+  _REPOSITORY: checkpoint2cicd        # 替換成您的 Artifact Registry 存放區名稱
+  _IMAGE_NAME: checkpoint-be          # 替換成您想要的映像檔名稱
