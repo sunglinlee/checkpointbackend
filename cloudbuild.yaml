@@ -1,46 +1,134 @@
 steps:
-  # 步驟 1: 使用 Dockerfile 建置容器映像檔
-  # $PROJECT_ID: Cloud Build 會自動代入您的專案 ID
-  # $COMMIT_SHA: Cloud Build 會自動代入這次提交的 Git SHA 值，用來當作映像檔的唯一標籤
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
-      - '.'
-
-  # 步驟 2: 將建置好的映像檔推送到 Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
-
-  # 步驟 3: 將這個新映像檔部署到 Cloud Run
+  # 步驟 1: 檢查文件變更
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - '${_SERVICE_NAME}' # 您要部署的 Cloud Run 服務名稱
-      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
-      - '--region'
-      - '${_REGION}' # 您希望部署在哪個地區
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated' # 允許未經授權的公開存取，如果您的 API 需要登入，請移除此行
+      - '-c'
+      - |
+        set -e
+        echo "=== Checking for file changes ==="
+        echo "Current commit: $COMMIT_SHA"
+        
+        # 獲取上一次成功部署的 commit SHA
+        LAST_SHA=$$(gcloud run services describe ${_SERVICE_NAME} \
+          --region=${_REGION} \
+          --format="value(metadata.annotations.\"run.googleapis.com/commit-sha\")" \
+          2>/dev/null || echo "")
+        
+        if [ -z "$$LAST_SHA" ]; then
+          echo "No previous deployment found, proceeding with full deployment"
+          echo "DEPLOY=true" > /workspace/deploy_decision.env
+        else
+          echo "Last deployed SHA: $$LAST_SHA"
+          
+          # 設定 git 配置
+          git config --global --add safe.directory /workspace
+          
+          # 檢查文件變更
+          CHANGED_FILES=$$(git diff --name-only $$LAST_SHA..$COMMIT_SHA 2>/dev/null || echo "all")
+          echo "Changed files:"
+          echo "$$CHANGED_FILES"
+          
+          # 檢查是否有相關變更
+          SHOULD_DEPLOY=false
+          
+          # 檢查 src 目錄
+          if echo "$$CHANGED_FILES" | grep -q "src/"; then
+            echo "Found changes in src/ directory"
+            SHOULD_DEPLOY=true
+          fi
+          
+          # 檢查 pom.xml
+          if echo "$$CHANGED_FILES" | grep -q "pom.xml"; then
+            echo "Found changes in pom.xml"
+            SHOULD_DEPLOY=true
+          fi
+          
+          # 檢查 Dockerfile
+          if echo "$$CHANGED_FILES" | grep -q "Dockerfile"; then
+            echo "Found changes in Dockerfile"
+            SHOULD_DEPLOY=true
+          fi
+          
+          # 檢查配置文件
+          if echo "$$CHANGED_FILES" | grep -qE "\.(yml|yaml|properties)$$"; then
+            echo "Found changes in configuration files"
+            SHOULD_DEPLOY=true
+          fi
+          
+          if [ "$$SHOULD_DEPLOY" = true ]; then
+            echo "DEPLOY=true" > /workspace/deploy_decision.env
+            echo "Will proceed with deployment"
+          else
+            echo "DEPLOY=false" > /workspace/deploy_decision.env
+            echo "No relevant changes detected, skipping deployment"
+          fi
+        fi
+    env:
+      - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
 
-# 這個設定讓部署步驟可以存取到建置好的映像檔
+  # 步驟 2: 條件性建置容器映像檔
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        source /workspace/deploy_decision.env
+        if [ "$$DEPLOY" = "true" ]; then
+          echo "Building Docker image..."
+          docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA .
+          echo "Docker build completed"
+        else
+          echo "Skipping Docker build - no deployment needed"
+        fi
+
+  # 步驟 3: 條件性推送映像檔
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        source /workspace/deploy_decision.env
+        if [ "$$DEPLOY" = "true" ]; then
+          echo "Pushing Docker image..."
+          docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA
+          echo "Docker push completed"
+        else
+          echo "Skipping Docker push - no deployment needed"
+        fi
+
+  # 步驟 4: 條件性部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        source /workspace/deploy_decision.env
+        if [ "$$DEPLOY" = "true" ]; then
+          echo "Deploying to Cloud Run..."
+          gcloud run deploy ${_SERVICE_NAME} \
+            --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA \
+            --region=${_REGION} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --update-annotations="run.googleapis.com/commit-sha=$COMMIT_SHA"
+          echo "Deployment completed successfully"
+        else
+          echo "Skipping Cloud Run deployment - no changes detected"
+        fi
+    env:
+      - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
+
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
 
-# options 區塊來指定日誌記錄行為
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 100
 
-
-# 定義替代變數
 substitutions:
-  _SERVICE_NAME: checkpoint-backend  # 替換成您的 Cloud Run 服務名稱
-  _REGION: asia-east1                    # 替換成您的部署地區
-  _REPOSITORY: checkpoint2cicd   # 替換成您的 Artifact Registry 存放區名稱
-  _IMAGE_NAME: checkpoint-be  # 替換成您想要的映像檔名稱
+  _SERVICE_NAME: checkpoint-backend
+  _REGION: asia-east1
+  _REPOSITORY: checkpoint2cicd
+  _IMAGE_NAME: checkpoint-be
