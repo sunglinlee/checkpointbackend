@@ -20,17 +20,15 @@ public class UserDAO {
     public void insert(UserRegisterRequest request) {
         String sql = """
                 INSERT INTO USER (
-                    EMAIL, PASSWORD, NAME, CREATED_TIME, UPDATED_TIME)
+                    EMAIL, PASSWORD, NAME)
                 VALUES (
-                    :email, :password, :name, :createdTime, :updateTime)
+                    :email, :password, :name)
                 """;
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("email", request.email())
                 .addValue("password", request.password())
-                .addValue("nickname", request.name())
-                .addValue("createdTime", Instant.now(clock).toEpochMilli())
-                .addValue("updateTime", Instant.now(clock).toEpochMilli());
+                .addValue("name", request.name());
 
         jdbcTemplate.update(sql, parameters);
     }
