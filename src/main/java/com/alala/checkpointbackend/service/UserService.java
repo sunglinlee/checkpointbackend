@@ -11,11 +11,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
     private final UserDAO userDAO;
-    private final RedisService redisService;
+    private final CacheService cacheService;
 
     public String register(UserRegisterRequest request) {
         userDAO.insert(request);
-        redisService.set(request.email(), UUID.randomUUID().toString());
+        cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
         return userDAO.findByEmail(request.email()).toString();
     }
 
@@ -23,12 +23,12 @@ public class UserService {
         if (userDAO.countByEmail(request.email()) == 0) {
             userDAO.insert(request);
         }
-        redisService.set(request.email(), request.token());
+        cacheService.put(request.email(), request.token(), 3600L);
         return userDAO.findByEmail(request.email()).toString();
     }
 
     public String mailLogin(MailLoginRequest request) {
-        redisService.set(request.email(), request.token());
+        cacheService.put(request.email(), request.token(), 3600L);
         return userDAO.findByEmail(request.email()).toString();
     }
 
@@ -37,24 +37,24 @@ public class UserService {
         if (user == null || !user.getPassword().equals(request.password())) {
             throw new IllegalArgumentException("Invalid email or password");
         }
-        redisService.set(request.email(), UUID.randomUUID().toString());
+        cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
         return user.toString();
     }
 
     public String logout(UserLoginRequest request) {
-        if (redisService.get(request.email())==null){
+        if (cacheService.get(request.email()) == null) {
             throw new IllegalArgumentException("User not logged in");
         }
-        redisService.delete(request.email());
+        cacheService.remove(request.email());
         return "User logged out successfully";
     }
 
     public String refreshToken(String email) {
-        String token = redisService.get(email);
+        String token = (String) cacheService.get(email);
         if (token == null) {
             throw new IllegalArgumentException("User not logged in");
         }
-        redisService.set(email, token);
+        cacheService.put(email, token, 3600L);
         return "Token refreshed successfully";
     }
 }
