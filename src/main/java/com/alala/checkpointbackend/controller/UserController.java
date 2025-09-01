@@ -1,9 +1,9 @@
 package com.alala.checkpointbackend.controller;
 
-import com.alala.checkpointbackend.model.MailLoginRequest;
-import com.alala.checkpointbackend.model.MailRegisterRequest;
-import com.alala.checkpointbackend.model.UserLoginRequest;
-import com.alala.checkpointbackend.model.UserRegisterRequest;
+import com.alala.checkpointbackend.enums.StatusCode;
+import com.alala.checkpointbackend.exception.DuplicateUserException;
+import com.alala.checkpointbackend.exception.WrongPasswordException;
+import com.alala.checkpointbackend.model.*;
 import com.alala.checkpointbackend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,37 +19,31 @@ public class UserController {
 
     @Operation(description = "一般註冊")
     @PostMapping(value = "/register")
-    public String register(@RequestBody UserRegisterRequest request) {
-        return userService.register(request);
-    }
-
-    @Operation(description = "信箱註冊")
-    @PostMapping(value = "/mailRegister")
-    public String mailRegister(@RequestBody MailRegisterRequest request) {
-        return userService.mailRegister(request);
+    public BaseResponse<User> register(@RequestBody UserRegisterRequest request) throws DuplicateUserException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.register(request));
     }
 
     @Operation(description = "信箱登入")
     @PostMapping(value = "/mailLogin")
-    public String mailLogin(@RequestBody MailLoginRequest request) {
-        return userService.mailLogin(request);
+    public BaseResponse<User> mailLogin(@RequestBody MailLoginRequest request) {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.mailLogin(request));
     }
 
     @Operation(description = "一般登入")
     @PostMapping(value = "/login")
-    public String register(@RequestBody UserLoginRequest request) {
-        return userService.login(request);
+    public BaseResponse<User> register(@RequestBody UserLoginRequest request) throws WrongPasswordException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.login(request));
     }
 
     @Operation(description = "登出")
     @PostMapping(value = "/logout")
-    public String logout(@RequestBody UserLoginRequest request) {
-        return userService.logout(request);
+    public BaseResponse<String> logout(@RequestBody UserLoginRequest request) {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.logout(request));
     }
 
     @Operation(description = "刷新token")
     @GetMapping(value = "/refreshToken")
-    public String refreshToken(@RequestParam String email) {
-        return userService.refreshToken(email);
+    public BaseResponse<String> refreshToken(@RequestParam String email) {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.refreshToken(email));
     }
 }

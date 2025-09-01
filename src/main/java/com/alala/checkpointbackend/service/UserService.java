@@ -1,7 +1,12 @@
 package com.alala.checkpointbackend.service;
 
 import com.alala.checkpointbackend.dao.UserDAO;
-import com.alala.checkpointbackend.model.*;
+import com.alala.checkpointbackend.exception.DuplicateUserException;
+import com.alala.checkpointbackend.exception.WrongPasswordException;
+import com.alala.checkpointbackend.model.MailLoginRequest;
+import com.alala.checkpointbackend.model.User;
+import com.alala.checkpointbackend.model.UserLoginRequest;
+import com.alala.checkpointbackend.model.UserRegisterRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,32 +18,28 @@ public class UserService {
     private final UserDAO userDAO;
     private final CacheService cacheService;
 
-    public String register(UserRegisterRequest request) {
-        userDAO.insert(request);
-        cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
-        return userDAO.findByEmail(request.email()).toString();
-    }
-
-    public String mailRegister(MailRegisterRequest request) {
-        if (userDAO.countByEmail(request.email()) == 0) {
+    public User register(UserRegisterRequest request) throws DuplicateUserException {
+        try {
             userDAO.insert(request);
+            cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
+        } catch (Exception e) {
+            throw new DuplicateUserException("Email already in use");
         }
-        cacheService.put(request.email(), request.token(), 3600L);
-        return userDAO.findByEmail(request.email()).toString();
+        return userDAO.findByEmail(request.email());
     }
 
-    public String mailLogin(MailLoginRequest request) {
+    public User mailLogin(MailLoginRequest request) {
         cacheService.put(request.email(), request.token(), 3600L);
-        return userDAO.findByEmail(request.email()).toString();
+        return userDAO.findByEmail(request.email());
     }
 
-    public String login(UserLoginRequest request) {
+    public User login(UserLoginRequest request) throws WrongPasswordException {
         User user = userDAO.findByEmail(request.email());
         if (user == null || !user.getPassword().equals(request.password())) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new WrongPasswordException("Invalid email or password");
         }
         cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
-        return user.toString();
+        return user;
     }
 
     public String logout(UserLoginRequest request) {

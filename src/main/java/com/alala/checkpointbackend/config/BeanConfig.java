@@ -24,5 +24,5 @@ public class BeanConfig {
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         return template;
     }
-    
+
 }

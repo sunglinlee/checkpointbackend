@@ -31,9 +31,9 @@ public class CacheService {
     /**
      * 將資料放入緩存，並設定過期時間 (TTL)
      *
-     * @param key     緩存的鍵
-     * @param value   要緩存的值
-     * @param ttlInSeconds  過期時間（單位：秒）
+     * @param key          緩存的鍵
+     * @param value        要緩存的值
+     * @param ttlInSeconds 過期時間（單位：秒）
      */
     public void put(String key, Object value, long ttlInSeconds) {
         if (key != null && value != null) {
