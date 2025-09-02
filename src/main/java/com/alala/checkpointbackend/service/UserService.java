@@ -30,16 +30,19 @@ public class UserService {
 
     public User mailLogin(MailLoginRequest request) {
         cacheService.put(request.email(), request.token(), 3600L);
+        if (userDAO.countByEmail(request.email()) == 0) {
+            userDAO.insert(request.email());
+        }
         return userDAO.findByEmail(request.email());
     }
 
     public User login(UserLoginRequest request) throws WrongPasswordException {
-        User user = userDAO.findByEmail(request.email());
-        if (user == null || !user.getPassword().equals(request.password())) {
+        String password = userDAO.getPassword(request.email());
+        if (password == null || !password.equals(request.password())) {
             throw new WrongPasswordException("Invalid email or password");
         }
         cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
-        return user;
+        return userDAO.findByEmail(request.email());
     }
 
     public String logout(UserLoginRequest request) {

@@ -31,6 +31,20 @@ public class UserDAO {
         jdbcTemplate.update(sql, parameters);
     }
 
+    public void insert(String email) {
+        String sql = """
+                INSERT INTO USER (
+                    EMAIL)
+                VALUES (
+                    :email)
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email);
+
+        jdbcTemplate.update(sql, parameters);
+    }
+
     public User findByEmail(String email) {
         String sql = "SELECT * FROM USER WHERE EMAIL = :email";
 
@@ -41,12 +55,20 @@ public class UserDAO {
                 User.builder()
                         .email(rs.getString("EMAIL"))
                         .name(rs.getString("NAME"))
-                        .password(rs.getString("PASSWORD"))
                         .build()
         );
     }
 
-    public int countByEmail(String email) {
+    public String getPassword(String email) {
+        String sql = "SELECT PASSWORD FROM USER WHERE EMAIL = :email";
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email);
+
+        return jdbcTemplate.queryForObject(sql, parameters, String.class);
+    }
+
+    public Integer countByEmail(String email) {
         String sql = "SELECT COUNT(*) FROM USER WHERE EMAIL = :email";
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
