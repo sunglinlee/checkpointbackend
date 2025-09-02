@@ -31,16 +31,17 @@ public class UserDAO {
         jdbcTemplate.update(sql, parameters);
     }
 
-    public void insert(String email) {
+    public void insert(String email, String name) {
         String sql = """
                 INSERT INTO USER (
-                    EMAIL)
+                    EMAIL, NAME)
                 VALUES (
-                    :email)
+                    :email, :name)
                 """;
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
-                .addValue("email", email);
+                .addValue("email", email)
+                .addValue("name", name);
 
         jdbcTemplate.update(sql, parameters);
     }

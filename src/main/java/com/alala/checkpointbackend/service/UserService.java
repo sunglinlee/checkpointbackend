@@ -31,7 +31,7 @@ public class UserService {
     public User mailLogin(MailLoginRequest request) {
         cacheService.put(request.email(), request.token(), 3600L);
         if (userDAO.countByEmail(request.email()) == 0) {
-            userDAO.insert(request.email());
+            userDAO.insert(request.email(), request.name());
         }
         return userDAO.findByEmail(request.email());
     }
