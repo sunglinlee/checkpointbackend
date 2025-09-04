@@ -50,7 +50,7 @@ public class UserController {
 
     @Operation(description = "修改暱稱")
     @PostMapping(value = "/change")
-    public BaseResponse<String> changeName(@RequestBody UserLoginRequest request) throws UserNotLoginException {
-        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.logout(request));
+    public BaseResponse<User> changeName(@RequestBody UserChangeRequest request) throws UserNotLoginException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.changeName(request));
     }
 }
