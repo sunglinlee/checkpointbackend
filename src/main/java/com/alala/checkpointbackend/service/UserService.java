@@ -60,12 +60,25 @@ public class UserService {
         return "Token refreshed successfully";
     }
 
-    public User changeName(UserChangeRequest request) throws UserNotLoginException {
+    public User changeName(UserChangeNameRequest request) throws UserNotLoginException {
         String token = (String) cacheService.get(request.email());
         if (token == null) {
             throw new UserNotLoginException("User not logged in");
         }
         userDAO.updateName(request.email(), request.name());
         return userDAO.findByEmail(request.email());
+    }
+
+    public String changePassword(UserChangePasswordRequest request) throws UserNotLoginException, WrongPasswordException {
+        String token = (String) cacheService.get(request.email());
+        if (token == null) {
+            throw new UserNotLoginException("User not logged in");
+        }
+        String password = userDAO.getPassword(request.email());
+        if (password == null || !password.equals(request.currentPassword())) {
+            throw new WrongPasswordException("Invalid email or password");
+        }
+        userDAO.updatePassword(request.email(), request.newPassword());
+        return "Password changed successfully";
     }
 }
