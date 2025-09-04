@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum StatusCode {
     SUCCESS("0000"),
     DUPLICATE_USER("1001"),
-    WRONG_PASSWORD("1002");
+    WRONG_PASSWORD("1002"),
+    USER_NOT_LOGIN("1003"),;
 
     private final String code;
 

@@ -29,4 +29,11 @@ public class UserExceptionHandler {
         return new BaseResponse<>(StatusCode.WRONG_PASSWORD.getCode(), "Wrong Password");
     }
 
+    @ResponseBody
+    @ResponseStatus(HttpStatus.OK)
+    @ExceptionHandler(UserNotLoginException.class)
+    public BaseResponse<String> userNotLogin() {
+        return new BaseResponse<>(StatusCode.USER_NOT_LOGIN.getCode(), "User Not Login");
+    }
+
 }

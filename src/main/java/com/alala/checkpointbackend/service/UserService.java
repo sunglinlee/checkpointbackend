@@ -2,11 +2,9 @@ package com.alala.checkpointbackend.service;
 
 import com.alala.checkpointbackend.dao.UserDAO;
 import com.alala.checkpointbackend.exception.DuplicateUserException;
+import com.alala.checkpointbackend.exception.UserNotLoginException;
 import com.alala.checkpointbackend.exception.WrongPasswordException;
-import com.alala.checkpointbackend.model.MailLoginRequest;
-import com.alala.checkpointbackend.model.User;
-import com.alala.checkpointbackend.model.UserLoginRequest;
-import com.alala.checkpointbackend.model.UserRegisterRequest;
+import com.alala.checkpointbackend.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -45,9 +43,9 @@ public class UserService {
         return userDAO.findByEmail(request.email());
     }
 
-    public String logout(UserLoginRequest request) {
+    public String logout(UserLoginRequest request) throws UserNotLoginException {
         if (cacheService.get(request.email()) == null) {
-            throw new IllegalArgumentException("User not logged in");
+            throw new UserNotLoginException("User not logged in");
         }
         cacheService.remove(request.email());
         return "User logged out successfully";
@@ -60,5 +58,14 @@ public class UserService {
         }
         cacheService.put(email, token, 3600L);
         return "Token refreshed successfully";
+    }
+
+    public User changeName(UserChangeRequest request) throws UserNotLoginException {
+        String token = (String) cacheService.get(request.email());
+        if (token == null) {
+            throw new UserNotLoginException("User not logged in");
+        }
+        userDAO.updateName(request.email(), request.name());
+        return userDAO.findByEmail(request.email());
     }
 }

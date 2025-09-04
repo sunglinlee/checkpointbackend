@@ -2,6 +2,7 @@ package com.alala.checkpointbackend.controller;
 
 import com.alala.checkpointbackend.enums.StatusCode;
 import com.alala.checkpointbackend.exception.DuplicateUserException;
+import com.alala.checkpointbackend.exception.UserNotLoginException;
 import com.alala.checkpointbackend.exception.WrongPasswordException;
 import com.alala.checkpointbackend.model.*;
 import com.alala.checkpointbackend.service.UserService;
@@ -37,7 +38,7 @@ public class UserController {
 
     @Operation(description = "登出")
     @PostMapping(value = "/logout")
-    public BaseResponse<String> logout(@RequestBody UserLoginRequest request) {
+    public BaseResponse<String> logout(@RequestBody UserLoginRequest request) throws UserNotLoginException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.logout(request));
     }
 
@@ -45,5 +46,11 @@ public class UserController {
     @GetMapping(value = "/refreshToken")
     public BaseResponse<String> refreshToken(@RequestParam String email) {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.refreshToken(email));
+    }
+
+    @Operation(description = "修改暱稱")
+    @PostMapping(value = "/change")
+    public BaseResponse<String> changeName(@RequestBody UserLoginRequest request) throws UserNotLoginException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.logout(request));
     }
 }

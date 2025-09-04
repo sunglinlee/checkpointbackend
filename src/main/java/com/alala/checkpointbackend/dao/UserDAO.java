@@ -77,4 +77,16 @@ public class UserDAO {
 
         return jdbcTemplate.queryForObject(sql, parameters, Integer.class);
     }
+
+    public void updateName(String email, String name) {
+        String sql = """
+                UPDATE USER SET NAME = :name WHERE EMAIL = :email
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email)
+                .addValue("name", name);
+
+        jdbcTemplate.update(sql, parameters);
+    }
 }
