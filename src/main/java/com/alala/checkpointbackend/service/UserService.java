@@ -26,10 +26,14 @@ public class UserService {
         return userDAO.findByEmail(request.email());
     }
 
-    public User mailLogin(MailLoginRequest request) {
-        cacheService.put(request.email(), request.token(), 3600L);
-        if (userDAO.countByEmail(request.email()) == 0) {
-            userDAO.insert(request.email(), request.name());
+    public User mailLogin(MailLoginRequest request) throws DuplicateUserException {
+        try {
+            cacheService.put(request.email(), request.token(), 3600L);
+            if (userDAO.countByEmail(request.email()) == 0) {
+                userDAO.insert(request.email(), request.name());
+            }
+        } catch (Exception e) {
+            throw new DuplicateUserException("Email already in use");
         }
         return userDAO.findByEmail(request.email());
     }

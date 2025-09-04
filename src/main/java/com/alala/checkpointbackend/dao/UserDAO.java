@@ -89,4 +89,16 @@ public class UserDAO {
 
         jdbcTemplate.update(sql, parameters);
     }
+
+    public void updatePassword(String email, String password) {
+        String sql = """
+                UPDATE USER SET PASSWORD = :password WHERE EMAIL = :email
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email)
+                .addValue("password", password);
+
+        jdbcTemplate.update(sql, parameters);
+    }
 }

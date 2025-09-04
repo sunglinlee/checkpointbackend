@@ -26,7 +26,7 @@ public class UserController {
 
     @Operation(description = "信箱登入")
     @PostMapping(value = "/mailLogin")
-    public BaseResponse<User> mailLogin(@RequestBody MailLoginRequest request) {
+    public BaseResponse<User> mailLogin(@RequestBody MailLoginRequest request) throws DuplicateUserException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.mailLogin(request));
     }
 
