@@ -19,7 +19,7 @@ public class UserService {
     public User register(UserRegisterRequest request) throws DuplicateUserException {
         try {
             userDAO.insert(request);
-            cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
+//            cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
         } catch (Exception e) {
             throw new DuplicateUserException("Email already in use");
         }
@@ -28,7 +28,7 @@ public class UserService {
 
     public User mailLogin(MailLoginRequest request) throws DuplicateUserException {
         try {
-            cacheService.put(request.email(), request.token(), 3600L);
+//            cacheService.put(request.email(), request.googleId(), 3600L);
             if (userDAO.countByEmail(request.email()) == 0) {
                 userDAO.insert(request.email(), request.name());
             }
@@ -43,41 +43,41 @@ public class UserService {
         if (password == null || !password.equals(request.password())) {
             throw new WrongPasswordException("Invalid email or password");
         }
-        cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
+//        cacheService.put(request.email(), UUID.randomUUID().toString(), 3600L);
         return userDAO.findByEmail(request.email());
     }
 
     public String logout(UserLoginRequest request) throws UserNotLoginException {
-        if (cacheService.get(request.email()) == null) {
-            throw new UserNotLoginException("User not logged in");
-        }
+//        if (cacheService.get(request.email()) == null) {
+//            throw new UserNotLoginException("User not logged in");
+//        }
         cacheService.remove(request.email());
         return "User logged out successfully";
     }
 
     public String refreshToken(String email) {
-        String token = (String) cacheService.get(email);
-        if (token == null) {
-            throw new IllegalArgumentException("User not logged in");
-        }
-        cacheService.put(email, token, 3600L);
+//        String token = (String) cacheService.get(email);
+//        if (token == null) {
+//            throw new IllegalArgumentException("User not logged in");
+//        }
+//        cacheService.put(email, token, 3600L);
         return "Token refreshed successfully";
     }
 
     public User changeName(UserChangeNameRequest request) throws UserNotLoginException {
-        String token = (String) cacheService.get(request.email());
-        if (token == null) {
-            throw new UserNotLoginException("User not logged in");
-        }
+//        String token = (String) cacheService.get(request.email());
+//        if (token == null) {
+//            throw new UserNotLoginException("User not logged in");
+//        }
         userDAO.updateName(request.email(), request.name());
         return userDAO.findByEmail(request.email());
     }
 
     public String changePassword(UserChangePasswordRequest request) throws UserNotLoginException, WrongPasswordException {
-        String token = (String) cacheService.get(request.email());
-        if (token == null) {
-            throw new UserNotLoginException("User not logged in");
-        }
+//        String token = (String) cacheService.get(request.email());
+//        if (token == null) {
+//            throw new UserNotLoginException("User not logged in");
+//        }
         String password = userDAO.getPassword(request.email());
         if (password == null || !password.equals(request.currentPassword())) {
             throw new WrongPasswordException("Invalid email or password");
