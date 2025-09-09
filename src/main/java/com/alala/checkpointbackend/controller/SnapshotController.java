@@ -7,10 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "snapshot", description = "快照相關API")
 @RestController
@@ -20,7 +17,7 @@ public class SnapshotController {
     private final QuestionnaireService questionnaireService;
 
     @Operation(description = "查詢全部問卷")
-    @GetMapping(value = "/snapshots")
+    @PostMapping(value = "/snapshots")
     public BaseResponse<String> snapshots(@RequestBody String email) throws JsonProcessingException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.query(email));
     }
