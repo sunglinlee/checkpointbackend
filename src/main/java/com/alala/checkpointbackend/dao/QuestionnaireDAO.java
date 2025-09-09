@@ -1,5 +1,6 @@
 package com.alala.checkpointbackend.dao;
 
+import com.alala.checkpointbackend.model.Questionnaire;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -23,30 +24,31 @@ public class QuestionnaireDAO {
                 """;
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
-                .addValue("email", request.path("email").toString())
-                .addValue("qa", request.get("qa").asText())
+                .addValue("email", request.path("email").asText())
+                .addValue("qa", request.get("qa").toString())
                 .addValue("createTime", createTime)
                 .addValue("scheduleTime", scheduleTime)
-                .addValue("moodAndTags",request.get("mood_and_tags").toString());
+                .addValue("moodAndTags", request.get("mood_and_tags").toString());
 
         jdbcTemplate.update(sql, parameters);
     }
 
-//    public List<> insert(JsonNode request, Timestamp createTime, Timestamp scheduleTime) {
-//        String sql = """
-//                INSERT INTO QUESTIONNAIRE (
-//                    EMAIL, QA, CREATE_TIME, SHEDULE_TIME, MOOD_AND_TAGS)
-//                VALUES (
-//                    :email, :qa, :createTime, :scheduleTime, :moodAndTags)
-//                """;
-//
-//        MapSqlParameterSource parameters = new MapSqlParameterSource()
-//                .addValue("email", request.path("email").asText())
-//                .addValue("qa", request.path("qa").asText())
-//                .addValue("createTime", createTime)
-//                .addValue("scheduleTime", scheduleTime)
-//                .addValue("moodAndTags",request.path("mood_and_tags").asText());
-//
-//        jdbcTemplate.update(sql, parameters);
-//    }
+    public List<Questionnaire> query(String email) {
+        String sql = """
+                SELECT * FROM QUESTIONNAIRE WHERE EMAIL = :email
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email);
+
+        return jdbcTemplate.query(sql, parameters, (rs, rowNum) ->
+                Questionnaire.builder()
+                        .email(rs.getString("EMAIL"))
+                        .qa(rs.getString("QA"))
+                        .createTime(rs.getTimestamp("CREATE_TIME").toString())
+                        .scheduleTime(rs.getTimestamp("SCHEDULE_TIME").toString())
+                        .moodAndTags(rs.getString("MOOD_AND_TAGS"))
+                        .build()
+        );
+    }
 }

@@ -22,9 +22,9 @@ public class QuestionnaireController {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.submit(jsonString));
     }
 
-//    @Operation(description = "查詢全部問卷")
-//    @GetMapping(value = "/snapshots")
-//    public BaseResponse<String> snapshots(@RequestBody String email) throws JsonProcessingException {
-//        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.query(email));
-//    }
+    @Operation(description = "查詢全部問卷")
+    @GetMapping(value = "/snapshots")
+    public BaseResponse<String> snapshots(@RequestBody String email) throws JsonProcessingException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.query(email));
+    }
 }
