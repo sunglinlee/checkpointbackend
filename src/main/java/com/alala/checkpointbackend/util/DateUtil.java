@@ -36,14 +36,14 @@ public class DateUtil {
 
         // 根據預計發送時間字串，決定要加多少時間單位
         instant = switch (scheduleTime) {
-            case "1分鐘" -> instant.plus(1, ChronoUnit.MINUTES);
-            case "1個月" ->
+            case "1 分鐘" -> instant.plus(1, ChronoUnit.MINUTES);
+            case "1 個月" ->
                 // 這裡我們需要更精確的處理，因為每個月的天數不同
                 // 為了簡單，我們可以用 30 天來近似
                 // 更精準的方法是使用 ZonedDateTime 或 Period，但需要更多程式碼
                     instant.plus(30, ChronoUnit.DAYS);
-            case "3個月" -> instant.plus(90, ChronoUnit.DAYS);
-            case "6個月" -> instant.plus(180, ChronoUnit.DAYS);
+            case "3 個月" -> instant.plus(90, ChronoUnit.DAYS);
+            case "6 個月" -> instant.plus(180, ChronoUnit.DAYS);
             default ->
                 // 如果傳入的字串無效，可以拋出例外或返回原始時間
                     throw new IllegalArgumentException("無效的預計發送時間: " + scheduleTime);
