@@ -24,10 +24,10 @@ public class QuestionnaireDAO {
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("email", request.path("email").asText())
-                .addValue("qa", request.path("qa").asText())
+                .addValue("qa", request.get("qa").asText())
                 .addValue("createTime", createTime)
                 .addValue("scheduleTime", scheduleTime)
-                .addValue("moodAndTags",request.path("mood_and_tags").asText());
+                .addValue("moodAndTags",request.get("mood_and_tags").asText());
 
         jdbcTemplate.update(sql, parameters);
     }
