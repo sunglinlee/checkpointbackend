@@ -17,8 +17,8 @@ public class SnapshotController {
     private final QuestionnaireService questionnaireService;
 
     @Operation(description = "查詢全部問卷")
-    @PostMapping(value = "/snapshots")
-    public BaseResponse<String> snapshots(@RequestBody String email) throws JsonProcessingException {
+    @GetMapping(value = "/snapshots")
+    public BaseResponse<String> snapshots(@RequestParam("email") String email) throws JsonProcessingException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.query(email));
     }
 }
