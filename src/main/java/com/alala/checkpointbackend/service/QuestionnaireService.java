@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -35,13 +37,13 @@ public class QuestionnaireService {
         ObjectNode json = objectMapper.createObjectNode();
         ArrayNode arrayNode = objectMapper.createArrayNode();
         json.put("total", count);
-        json.put("has_more",false);
+        json.put("has_more", false);
         json.put("next_offset", 20);
 
         for (Questionnaire questionnaire : result) {
             ObjectNode json1 = objectMapper.createObjectNode();
             JsonNode moodAndTags = objectMapper.readTree(questionnaire.getMoodAndTags());
-            json1.put("id", questionnaire.getEmail()+"_"+questionnaire.getCreateTime());
+            json1.put("id", questionnaire.getEmail() + "_" + questionnaire.getCreateTime());
             json1.put("title", moodAndTags.get("snapshot_title").asText());
             json1.put("date", questionnaire.getCreateTime());
             json1.put("mood", moodAndTags.get("current_mood").asText());
@@ -53,4 +55,66 @@ public class QuestionnaireService {
         json.set("questions", arrayNode);
         return json.toString();
     }
+
+    public String querySingle(String snapshotId) throws JsonProcessingException {
+        // 1. 分割字串，取得日期部分
+        String[] parts = snapshotId.split("_");
+        String email = parts[0];
+        if (parts.length < 2) {
+            System.err.println("字串格式不正確，無法分割。");
+        }
+        String dateString = parts[1];
+
+        // 2. 定義日期字串的格式
+        // 注意格式中的 '.' 後面是毫秒，需要用 'S' 來表示
+        // 'S' 是毫秒，可以根據你的精確度使用 'S'、'SS' 或 'SSS'
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+
+        // 3. 解析字串為 LocalDateTime
+        LocalDateTime localDateTime = LocalDateTime.parse(dateString, formatter);
+
+        // 4. 轉換為 java.sql.Timestamp
+        Timestamp createTime = Timestamp.valueOf(localDateTime);
+
+        System.out.println("原始日期字串: " + dateString);
+        System.out.println("轉換後的 Timestamp: " + createTime);
+
+
+        Questionnaire questionnaire = questionnaireDAO.querySingle(email, createTime);
+        ObjectNode json = objectMapper.createObjectNode();
+        JsonNode qa = objectMapper.readTree(questionnaire.getQa());
+        JsonNode moodAndTags = objectMapper.readTree(questionnaire.getMoodAndTags());
+        ObjectNode metadata = objectMapper.createObjectNode();
+        metadata.put("title", moodAndTags.get("snapshot_title").asText());
+        metadata.put("mood", moodAndTags.get("current_mood").asText());
+        metadata.put("tags", moodAndTags.get("personal_tags").asText());
+        metadata.put("content", moodAndTags.get("current_thoughts").asText());
+        metadata.put("next_reminder", questionnaire.getScheduleTime());
+
+        json.put("id", snapshotId);
+        json.put("created_at", questionnaire.getCreateTime());
+        json.set("questionnaire_data", qa);
+        json.set("metadata", metadata);
+
+        return json.toString();
+    }
+
+    public String delete(String snapshotId) {
+        String[] parts = snapshotId.split("_");
+        String email = parts[0];
+        if (parts.length < 2) {
+            System.err.println("字串格式不正確，無法分割。");
+        }
+        String dateString = parts[1];
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+        LocalDateTime localDateTime = LocalDateTime.parse(dateString, formatter);
+        Timestamp createTime = Timestamp.valueOf(localDateTime);
+
+        System.out.println("原始日期字串: " + dateString);
+        System.out.println("轉換後的 Timestamp: " + createTime);
+        questionnaireDAO.delete(email, createTime);
+
+        return "快照 " + snapshotId + " 已刪除";
+    }
+
 }

@@ -16,9 +16,27 @@ import org.springframework.web.bind.annotation.*;
 public class SnapshotController {
     private final QuestionnaireService questionnaireService;
 
-    @Operation(description = "查詢全部問卷")
+    @Operation(description = "查詢全部快照")
     @GetMapping(value = "/snapshots")
     public BaseResponse<String> snapshots(@RequestParam("email") String email) throws JsonProcessingException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.query(email));
     }
+
+    @Operation(description = "查詢單一快照")
+    @GetMapping(value = "/snapshots/{snapshot_id}")
+    public BaseResponse<String> singleSnapshots(@PathVariable("snapshot_id") String snapshotId) throws JsonProcessingException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.querySingle(snapshotId));
+    }
+
+    @Operation(description = "刪除快照")
+    @DeleteMapping(value = "/snapshots/{snapshot_id}")
+    public BaseResponse<String> deleteSnapshots(@PathVariable("snapshot_id") String snapshotId) {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.delete(snapshotId));
+    }
+
+//    @Operation(description = "更新快照標題")
+//    @PutMapping(value = "/snapshots/{snapshot_id}")
+//    public BaseResponse<String> updateSnapshots(@PathVariable("snapshot_id") String snapshotId) throws JsonProcessingException {
+//        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.delete(snapshotId));
+//    }
 }

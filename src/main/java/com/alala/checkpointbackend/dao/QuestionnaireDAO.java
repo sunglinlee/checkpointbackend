@@ -51,4 +51,36 @@ public class QuestionnaireDAO {
                         .build()
         );
     }
+
+    public Questionnaire querySingle(String email, Timestamp createTime) {
+        String sql = """
+                SELECT * FROM QUESTIONNAIRE WHERE EMAIL = :email AND CREATE_TIME = :createTime
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email)
+                .addValue("createTime", createTime);
+
+        return jdbcTemplate.queryForObject(sql, parameters, (rs, rowNum) ->
+                Questionnaire.builder()
+                        .email(rs.getString("EMAIL"))
+                        .qa(rs.getString("QA"))
+                        .createTime(rs.getTimestamp("CREATE_TIME").toString())
+                        .scheduleTime(rs.getTimestamp("SCHEDULE_TIME").toString())
+                        .moodAndTags(rs.getString("MOOD_AND_TAGS"))
+                        .build()
+        );
+    }
+
+    public void delete(String email, Timestamp createTime) {
+        String sql = """
+                DELETE FROM QUESTIONNAIRE WHERE EMAIL = :email AND CREATE_TIME = :createTime
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email", email)
+                .addValue("createTime", createTime);
+
+        jdbcTemplate.update(sql, parameters);
+    }
 }
