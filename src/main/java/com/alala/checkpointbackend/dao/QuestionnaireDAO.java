@@ -17,7 +17,7 @@ public class QuestionnaireDAO {
     public void insert(JsonNode request, Timestamp createTime, Timestamp scheduleTime) {
         String sql = """
                 INSERT INTO QUESTIONNAIRE (
-                    EMAIL, QA, CREATE_TIME, SHEDULE_TIME, MOOD_AND_TAGS)
+                    EMAIL, QA, CREATE_TIME, SCHEDULE_TIME, MOOD_AND_TAGS)
                 VALUES (
                     :email, :qa, :createTime, :scheduleTime, :moodAndTags)
                 """;
