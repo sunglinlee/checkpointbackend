@@ -32,6 +32,10 @@ RUN mvn package -DskipTests \
 # 使用一個更輕量的 JRE 映像檔來運行應用程式
 FROM eclipse-temurin:17-jre-focal
 
+# 設定時區為台灣時區
+ENV TZ=Asia/Taipei
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # 建立非 root 使用者以提升安全性
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
