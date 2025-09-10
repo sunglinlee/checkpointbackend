@@ -83,4 +83,17 @@ public class QuestionnaireDAO {
 
         jdbcTemplate.update(sql, parameters);
     }
+
+    public void update(String email, Timestamp createTime, String title) {
+        String sql = """
+                UPDATE QUESTIONNAIRE SET MOOD_AND_TAGS = :title WHERE EMAIL = :email AND CREATE_TIME = :createTime
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("email",email)
+                .addValue("createTime", createTime)
+                .addValue("title", title);
+
+        jdbcTemplate.update(sql, parameters);
+    }
 }

@@ -118,4 +118,29 @@ public class QuestionnaireService {
         return "快照 " + snapshotId + " 已刪除";
     }
 
+    public String update(String snapshotId, String title) throws JsonProcessingException {
+        String[] parts = snapshotId.split("_");
+        String email = parts[0];
+        if (parts.length < 2) {
+            System.err.println("字串格式不正確，無法分割。");
+        }
+        String dateString = parts[1];
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+        LocalDateTime localDateTime = LocalDateTime.parse(dateString, formatter);
+        Timestamp createTime = Timestamp.valueOf(localDateTime);
+
+        System.out.println("原始日期字串: " + dateString);
+        System.out.println("轉換後的 Timestamp: " + createTime);
+        Questionnaire questionnaire = questionnaireDAO.querySingle(email, createTime);
+        String moodAndTags = questionnaire.getMoodAndTags();
+        JsonNode moodAndTagsJson = objectMapper.readTree(moodAndTags);
+        ((ObjectNode) moodAndTagsJson).put("snapshot_title", title);
+        questionnaireDAO.update(email, createTime, moodAndTagsJson.toString());
+
+        ObjectNode json = objectMapper.createObjectNode();
+        json.put("id", snapshotId);
+        json.put("title", title);
+        json.put("updated_at", dateUtil.getCurrentTimePlus8().toString());
+        return json.toString();
+    }
 }

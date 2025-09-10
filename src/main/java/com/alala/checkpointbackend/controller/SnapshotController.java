@@ -2,6 +2,7 @@ package com.alala.checkpointbackend.controller;
 
 import com.alala.checkpointbackend.enums.StatusCode;
 import com.alala.checkpointbackend.model.BaseResponse;
+import com.alala.checkpointbackend.model.UpdateTitleRequest;
 import com.alala.checkpointbackend.service.QuestionnaireService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,9 +35,9 @@ public class SnapshotController {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.delete(snapshotId));
     }
 
-//    @Operation(description = "更新快照標題")
-//    @PutMapping(value = "/snapshots/{snapshot_id}")
-//    public BaseResponse<String> updateSnapshots(@PathVariable("snapshot_id") String snapshotId) throws JsonProcessingException {
-//        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.delete(snapshotId));
-//    }
+    @Operation(description = "更新快照標題")
+    @PutMapping(value = "/snapshots/{snapshot_id}")
+    public BaseResponse<String> updateSnapshots(@PathVariable("snapshot_id") String snapshotId, @RequestBody UpdateTitleRequest request) throws JsonProcessingException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.update(snapshotId, request.title()));
+    }
 }
