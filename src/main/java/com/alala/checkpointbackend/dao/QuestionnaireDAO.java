@@ -52,6 +52,26 @@ public class QuestionnaireDAO {
         );
     }
 
+    public List<Questionnaire> queryToday(Timestamp startTime, Timestamp endTime) {
+        String sql = """
+                SELECT * FROM QUESTIONNAIRE WHERE CREATE_TIME BETWEEN :startTime AND :endTime
+                """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("startTime", startTime)
+                .addValue("endTime", endTime);
+
+        return jdbcTemplate.query(sql, parameters, (rs, rowNum) ->
+                Questionnaire.builder()
+                        .email(rs.getString("EMAIL"))
+                        .qa(rs.getString("QA"))
+                        .createTime(rs.getTimestamp("CREATE_TIME").toString())
+                        .scheduleTime(rs.getTimestamp("SCHEDULE_TIME").toString())
+                        .moodAndTags(rs.getString("MOOD_AND_TAGS"))
+                        .build()
+        );
+    }
+
     public Questionnaire querySingle(String email, Timestamp createTime) {
         String sql = """
                 SELECT * FROM QUESTIONNAIRE WHERE EMAIL = :email AND CREATE_TIME = :createTime
