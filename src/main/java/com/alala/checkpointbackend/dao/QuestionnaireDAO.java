@@ -54,7 +54,7 @@ public class QuestionnaireDAO {
 
     public List<Questionnaire> queryToday(Timestamp startTime, Timestamp endTime) {
         String sql = """
-                SELECT * FROM QUESTIONNAIRE WHERE CREATE_TIME BETWEEN :startTime AND :endTime
+                SELECT * FROM QUESTIONNAIRE WHERE SCHEDULE_TIME BETWEEN :startTime AND :endTime
                 """;
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
