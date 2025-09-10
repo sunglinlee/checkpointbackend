@@ -59,4 +59,10 @@ public class UserController {
     public BaseResponse<String> changePassword(@RequestBody UserChangePasswordRequest request) throws UserNotLoginException, WrongPasswordException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.changePassword(request));
     }
+
+    @Operation(description = "忘記密碼")
+    @PostMapping(value = "/forgetPassword")
+    public BaseResponse<String> forgetPassword(@RequestBody UserForgetPasswordRequest request) throws UserNotLoginException, WrongPasswordException {
+        return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.forgetPassword(request.email()));
+    }
 }

@@ -15,6 +15,7 @@ import java.util.UUID;
 public class UserService {
     private final UserDAO userDAO;
     private final CacheService cacheService;
+    private final MailService mailService;
 
     public User register(UserRegisterRequest request) throws DuplicateUserException {
         try {
@@ -83,6 +84,12 @@ public class UserService {
             throw new WrongPasswordException("Invalid email or password");
         }
         userDAO.updatePassword(request.email(), request.newPassword());
+        return "Password changed successfully";
+    }
+
+    public String forgetPassword(String email) {
+        String password = userDAO.getPassword(email);
+        mailService.sendEmail(email, "忘記密碼", "484智障密碼都記不住？ 您的密碼為: " + password);
         return "Password changed successfully";
     }
 }
