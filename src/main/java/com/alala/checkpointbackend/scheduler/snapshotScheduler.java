@@ -1,8 +1,12 @@
 package com.alala.checkpointbackend.scheduler;
 
 import com.alala.checkpointbackend.dao.QuestionnaireDAO;
+import com.alala.checkpointbackend.dao.UserDAO;
 import com.alala.checkpointbackend.model.Questionnaire;
+import com.alala.checkpointbackend.model.User;
 import com.alala.checkpointbackend.service.MailService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +24,11 @@ public class snapshotScheduler {
     private static final Logger logger = LoggerFactory.getLogger(snapshotScheduler.class);
     private final QuestionnaireDAO questionnaireDAO;
     private final MailService mailService;
+    private final UserDAO userDAO;
 
-    // 每分鐘執行一次，60000 毫秒 = 1 分鐘
     @Scheduled(fixedRate = 60000)
-    public void runTaskEveryMinute() {
+    public void runTaskEveryMinute() throws MessagingException, JsonProcessingException {
         logger.info("排程任務正在執行中...");
-        // 這裡寫你每分鐘需要執行的業務邏輯
 
         // 1. 取得當前時間的精確瞬間
         Instant now = Instant.now();
@@ -53,30 +56,10 @@ public class snapshotScheduler {
         List<Questionnaire> questionnaires = questionnaireDAO.queryToday(startTime, endTime);
         for (Questionnaire questionnaire : questionnaires) {
             String email = questionnaire.getEmail();
-            String qa = questionnaire.getQa();
-            String createTime = questionnaire.getCreateTime();
-            String scheduleTime = questionnaire.getScheduleTime();
-            String moodAndTags = questionnaire.getMoodAndTags();
+            User user = userDAO.findByEmail(email);
 
-            String subject = "Your Daily Check-in Summary";
-            String body = String.format("""
-                    Dear User,
-                    
-                    Here is a summary of your daily check-in:
-                    
-                    - Email: %s
-                    - QA: %s
-                    - Create Time: %s
-                    - Schedule Time: %s
-                    - Mood and Tags: %s
-                    
-                    Thank you for using our service!
-                    
-                    Best regards,
-                    The Team
-                    """, email, qa, createTime, scheduleTime, moodAndTags);
-
-            mailService.sendEmail(email, subject, body);
+            mailService.sendEmail(email, user, questionnaire);
         }
     }
 }
+

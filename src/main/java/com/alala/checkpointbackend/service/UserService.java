@@ -5,6 +5,7 @@ import com.alala.checkpointbackend.exception.DuplicateUserException;
 import com.alala.checkpointbackend.exception.UserNotLoginException;
 import com.alala.checkpointbackend.exception.WrongPasswordException;
 import com.alala.checkpointbackend.model.*;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -87,9 +88,9 @@ public class UserService {
         return "Password changed successfully";
     }
 
-    public String forgetPassword(String email) {
+    public String forgetPassword(String email) throws MessagingException {
         String password = userDAO.getPassword(email);
-        mailService.sendEmail(email, "忘記密碼", "484智障密碼都記不住？ 您的密碼為: " + password);
+        mailService.sendForgetPasswordMail(email, "忘記密碼", "484智障密碼都記不住？ 您的密碼為: " + password);
         return "Password changed successfully";
     }
 }

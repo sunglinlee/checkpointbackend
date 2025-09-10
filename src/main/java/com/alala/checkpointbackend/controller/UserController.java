@@ -8,6 +8,7 @@ import com.alala.checkpointbackend.model.*;
 import com.alala.checkpointbackend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,7 +63,7 @@ public class UserController {
 
     @Operation(description = "忘記密碼")
     @PostMapping(value = "/forgetPassword")
-    public BaseResponse<String> forgetPassword(@RequestBody UserForgetPasswordRequest request) throws UserNotLoginException, WrongPasswordException {
+    public BaseResponse<String> forgetPassword(@RequestBody UserForgetPasswordRequest request) throws MessagingException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), userService.forgetPassword(request.email()));
     }
 }
