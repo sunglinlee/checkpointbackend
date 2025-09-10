@@ -49,6 +49,7 @@ public class QuestionnaireService {
             json1.put("mood", moodAndTags.get("current_mood").asText());
             json1.put("content", moodAndTags.get("current_thoughts").asText());
             json1.put("tags", moodAndTags.get("personal_tags").asText());
+            json1.put("schedule_time", questionnaire.getScheduleTime());
 
             arrayNode.add(json1);
         }
