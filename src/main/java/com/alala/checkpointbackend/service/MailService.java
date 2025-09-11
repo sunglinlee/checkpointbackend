@@ -48,7 +48,7 @@ public class MailService {
         context.setVariable("recipientName", user.getName());
         context.setVariable("duration", questionnaire.getPeriod());
         context.setVariable("userMessage", moodAndTags.get("current_thoughts").asText());
-        context.setVariable("reviewUrl", "URL");
+        context.setVariable("reviewUrl", "http://localhost:3000/api/api/snapshots/" + questionnaire.getEmail() + "_" + questionnaire.getCreateTime());
 
         // 使用樣板引擎處理 HTML 樣板
         String htmlContent = templateEngine.process("time-capsule-email", context);
