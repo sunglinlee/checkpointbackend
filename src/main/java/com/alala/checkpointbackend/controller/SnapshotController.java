@@ -36,7 +36,7 @@ public class SnapshotController {
     }
 
     @Operation(description = "更新快照標題")
-    @PutMapping(value = "/snapshots/{snapshot_id}")
+    @PutMapping(value = "/snapshots/{snapshot_id}/title")
     public BaseResponse<String> updateSnapshots(@PathVariable("snapshot_id") String snapshotId, @RequestBody UpdateTitleRequest request) throws JsonProcessingException {
         return new BaseResponse<>(StatusCode.SUCCESS.getCode(), questionnaireService.update(snapshotId, request.title()));
     }
