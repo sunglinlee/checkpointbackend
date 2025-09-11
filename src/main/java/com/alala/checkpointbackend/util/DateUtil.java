@@ -52,46 +52,4 @@ public class DateUtil {
         // 將 Instant 轉換回 Timestamp
         return Timestamp.from(instant);
     }
-
-    public String getIntervalDescription(String startTimeStr, String endTimeStr) {
-        // 檢查輸入是否為空
-        if (startTimeStr == null || endTimeStr == null || startTimeStr.isEmpty() || endTimeStr.isEmpty()) {
-            return "無效的日期";
-        }
-
-        // 定義字串的日期時間格式
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        try {
-            // 1. 解析字串為 LocalDateTime
-            LocalDateTime startDateTime = LocalDateTime.parse(startTimeStr, formatter);
-            LocalDateTime endDateTime = LocalDateTime.parse(endTimeStr, formatter);
-
-            // 2. 轉換為 LocalDate，以便 Period 能準確計算月數
-            LocalDate startLocalDate = startDateTime.toLocalDate();
-            LocalDate endLocalDate = endDateTime.toLocalDate();
-
-            // 3. 計算兩個日期的間隔
-            Period period = Period.between(startLocalDate, endLocalDate);
-
-            // 4. 計算總月數
-            int totalMonths = period.getYears() * 12 + period.getMonths();
-
-            // 5. 根據月數回傳對應的字串
-            if (totalMonths == 1) {
-                return "一個月";
-            } else if (totalMonths == 3) {
-                return "三個月";
-            } else if (totalMonths == 6) {
-                return "六個月";
-            } else {
-                return "其他";
-            }
-        } catch (DateTimeParseException e) {
-            // 如果字串格式不正確，則捕獲例外並回傳錯誤訊息
-            System.err.println("日期字串解析失敗: " + e.getMessage());
-            return "日期格式錯誤";
-        }
-    }
-
 }

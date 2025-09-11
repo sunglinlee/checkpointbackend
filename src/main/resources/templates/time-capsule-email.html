@@ -26,15 +26,15 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>嘿 <span th:text="${recipientName}">使用者稱呼</span>，一封來自三個月前自己的信，請查收 💌</h1>
+        <h1>嘿 <span th:text="${recipientName}">使用者稱呼</span>，一封來自 <span th:text="${duration}">時間</span> 前自己的信，請查收 💌</h1>
     </div>
 
     <div class="content">
         <p>親愛的 <span th:text="${recipientName}">使用者稱呼</span>，</p>
-        <p>時間過得好快，轉眼間 <span th:text="${duration}">三個月</span> 過去了。</p>
+        <p>時間過得好快，轉眼間 <span th:text="${duration}">時間</span> 過去了。</p>
         <p>那時的你，為自己空出了一段寧靜的時光，誠實地寫下當時的心情與想法，為自己留下了一份珍貴的「人生快照」。</p>
         <p>這是一封來自過去的時空信，乘載著當時你最真實的感受、煩惱、與盼望。</p>
-        <p>打開它或許需要一點點勇氣，但我們始終相信，溫柔地回望，是為了能更安穩地前行。在開啟之前，不妨先深呼吸一下，回想這 <span th:text="${duration}">三個月</span>，發生了哪些故事？你又走過了哪些風景？</p>
+        <p>打開它或許需要一點點勇氣，但我們始終相信，溫柔地回望，是為了能更安穩地前行。在開啟之前，不妨先深呼吸一下，回想這 <span th:text="${duration}">時間</span>，發生了哪些故事？你又走過了哪些風景？</p>
         <p>當時的你，留下了這段話給現在的你：</p>
         <div style="border-left: 4px solid #8A9A87; padding-left: 20px; margin: 2rem 0; font-style: italic; color: #555;">
             「<span th:text="${userMessage}">此處自動帶入使用者在問題 8-2『想要對未來自己說的一些話』中填寫的內容</span>」

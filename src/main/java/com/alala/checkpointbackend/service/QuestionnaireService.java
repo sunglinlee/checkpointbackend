@@ -26,7 +26,8 @@ public class QuestionnaireService {
     public String submit(String jsonString) throws JsonProcessingException {
         JsonNode json = objectMapper.readTree(jsonString);
         Timestamp currentTime = dateUtil.getCurrentTimePlus8();
-        questionnaireDAO.insert(json, currentTime, dateUtil.calculateTime(json.path("schedule").path("reminder_period").asText(), currentTime));
+        String period = json.path("schedule").path("reminder_period").asText();
+        questionnaireDAO.insert(json, currentTime, dateUtil.calculateTime(period, currentTime), period);
 
         return "問卷送出成功";
     }

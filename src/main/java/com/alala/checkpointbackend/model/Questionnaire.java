@@ -15,4 +15,5 @@ public class Questionnaire {
     String createTime;
     String scheduleTime;
     String moodAndTags;
+    String period;
 }

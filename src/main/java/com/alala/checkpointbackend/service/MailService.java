@@ -2,7 +2,6 @@ package com.alala.checkpointbackend.service;
 
 import com.alala.checkpointbackend.model.Questionnaire;
 import com.alala.checkpointbackend.model.User;
-import com.alala.checkpointbackend.util.DateUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,8 +26,6 @@ public class MailService {
     private final TemplateEngine templateEngine;
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
-    private final DateUtil dateUtil;
-
 
     public void sendForgetPasswordMail(String to, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -49,8 +46,7 @@ public class MailService {
         // 建立 Thymeleaf Context，並設定動態變數
         Context context = new Context();
         context.setVariable("recipientName", user.getName());
-        String intervalDescription = dateUtil.getIntervalDescription(questionnaire.getCreateTime(), questionnaire.getScheduleTime());
-        context.setVariable("duration", intervalDescription);
+        context.setVariable("duration", questionnaire.getPeriod());
         context.setVariable("userMessage", moodAndTags.get("current_thoughts").asText());
         context.setVariable("reviewUrl", "URL");
 
@@ -58,7 +54,7 @@ public class MailService {
         String htmlContent = templateEngine.process("time-capsule-email", context);
 
         // 設定郵件主旨、預覽文字和內容
-        helper.setSubject("嘿 " + user.getName() + "，一封來自" + intervalDescription + "前自己的信，請查收 💌");
+        helper.setSubject("嘿 " + user.getName() + "，一封來自" + questionnaire.getPeriod() + "前自己的信，請查收 💌");
         helper.setText(htmlContent, true); // 第二個參數設為 true 表示內容為 HTML
         helper.setFrom(username); // 替換為你的發送 Email
 

@@ -26,7 +26,7 @@ public class snapshotScheduler {
     private final MailService mailService;
     private final UserDAO userDAO;
 
-//    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 60000)
     public void runTaskEveryMinute() throws MessagingException, JsonProcessingException {
         logger.info("排程任務正在執行中...");
 

@@ -15,12 +15,12 @@ import java.util.List;
 public class QuestionnaireDAO {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public void insert(JsonNode request, Timestamp createTime, Timestamp scheduleTime) {
+    public void insert(JsonNode request, Timestamp createTime, Timestamp scheduleTime, String period) {
         String sql = """
                 INSERT INTO QUESTIONNAIRE (
-                    EMAIL, QA, CREATE_TIME, SCHEDULE_TIME, MOOD_AND_TAGS)
+                    EMAIL, QA, CREATE_TIME, SCHEDULE_TIME, MOOD_AND_TAGS, PERIOD)
                 VALUES (
-                    :email, :qa, :createTime, :scheduleTime, :moodAndTags)
+                    :email, :qa, :createTime, :scheduleTime, :moodAndTags, :period)
                 """;
 
         MapSqlParameterSource parameters = new MapSqlParameterSource()
@@ -28,7 +28,8 @@ public class QuestionnaireDAO {
                 .addValue("qa", request.get("qa").toString())
                 .addValue("createTime", createTime)
                 .addValue("scheduleTime", scheduleTime)
-                .addValue("moodAndTags", request.get("mood_and_tags").toString());
+                .addValue("moodAndTags", request.get("mood_and_tags").toString())
+                .addValue("period", period);
 
         jdbcTemplate.update(sql, parameters);
     }
@@ -48,6 +49,7 @@ public class QuestionnaireDAO {
                         .createTime(rs.getTimestamp("CREATE_TIME").toString())
                         .scheduleTime(rs.getTimestamp("SCHEDULE_TIME").toString())
                         .moodAndTags(rs.getString("MOOD_AND_TAGS"))
+                        .period(rs.getString("PERIOD"))
                         .build()
         );
     }
@@ -68,6 +70,7 @@ public class QuestionnaireDAO {
                         .createTime(rs.getTimestamp("CREATE_TIME").toString())
                         .scheduleTime(rs.getTimestamp("SCHEDULE_TIME").toString())
                         .moodAndTags(rs.getString("MOOD_AND_TAGS"))
+                        .period(rs.getString("PERIOD"))
                         .build()
         );
     }
@@ -88,6 +91,7 @@ public class QuestionnaireDAO {
                         .createTime(rs.getTimestamp("CREATE_TIME").toString())
                         .scheduleTime(rs.getTimestamp("SCHEDULE_TIME").toString())
                         .moodAndTags(rs.getString("MOOD_AND_TAGS"))
+                        .period(rs.getString("PERIOD"))
                         .build()
         );
     }
