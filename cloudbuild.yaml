@@ -82,7 +82,23 @@ steps:
           echo "Skipping Docker build - no deployment needed"
         fi
 
-  # 步驟 3: 條件性推送映像檔
+  # 步驟 3: 登入 Artifact Registry（僅在需部署時）
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        source /workspace/deploy_decision.env
+        if [ "$$DEPLOY" = "true" ]; then
+          echo "Configuring docker auth for Artifact Registry..."
+          gcloud auth configure-docker ${_REGION}-docker.pkg.dev -q
+        else
+          echo "Skipping docker auth - no deployment needed"
+        fi
+    env:
+      - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
+
+  # 步驟 4: 條件性推送映像檔
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args:
@@ -97,7 +113,7 @@ steps:
           echo "Skipping Docker push - no deployment needed"
         fi
 
-# 步驟 4: 條件性部署到 Cloud Run
+# 步驟 5: 條件性部署到 Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -122,8 +138,6 @@ steps:
         fi
     env:
       - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
-images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
