@@ -52,7 +52,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // ！！！設定您 GCS 前端的來源！！！
-        configuration.setAllowedOrigins(List.of("https://storage.googleapis.com"));
+        configuration.setAllowedOrigins(List.of("https://storage.googleapis.com", "http://localhost:3000"));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
