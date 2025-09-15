@@ -13,7 +13,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.springframework.http.HttpMethod.OPTIONS; // 引入 OPTIONS 方法
+import static org.springframework.http.HttpMethod.*;
 
 @Configuration
 @EnableWebSecurity
@@ -32,9 +32,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 3.1 關鍵！明確允許所有的 OPTIONS 預檢請求
                 .requestMatchers(OPTIONS, "/**").permitAll()
-                
+                .requestMatchers(GET, "/**").permitAll()
+                .requestMatchers(PUT, "/**").permitAll()
+                .requestMatchers(DELETE, "/**").permitAll()
+                .requestMatchers(POST, "/**").permitAll()
+
                 // 3.2 允許登入相關的 API 不需認證即可訪問
-                .requestMatchers("/api/user/mailLogin", "/api/user/login").permitAll() 
+//                .requestMatchers("/api/user/mailLogin", "/api/user/login").permitAll()
                 
                 // 3.3 其他所有請求都需要認證
                 .anyRequest().authenticated()
