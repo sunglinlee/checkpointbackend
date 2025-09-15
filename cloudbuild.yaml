@@ -1,72 +1,60 @@
 steps:
-  # 步驟 1: 檢查文件變更
+  # 步驟 1: 檢查是否需要部署 (檢查檔案變更 或 commit message)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         set -e
-        echo "=== Checking for file changes ==="
+        echo "=== Checking for conditions to deploy ==="
         echo "Current commit: $COMMIT_SHA"
         
-        # 獲取上一次成功部署的 commit SHA
-        LAST_SHA=$$(gcloud run services describe ${_SERVICE_NAME} \
-          --region=${_REGION} \
-          --format="value(metadata.annotations.\"run.googleapis.com/commit-sha\")" \
-          2>/dev/null || echo "")
+        # 預設為不部署
+        SHOULD_DEPLOY=false
         
-        if [ -z "$$LAST_SHA" ]; then
-          echo "No previous deployment found, proceeding with full deployment"
-          echo "DEPLOY=true" > /workspace/deploy_decision.env
+        # 設定 git 配置，以便讀取 commit message
+        git config --global --add safe.directory /workspace
+        COMMIT_MESSAGE=$$(git log -1 --pretty=%B)
+
+        # 檢查 commit message 是否包含 [force deploy]
+        if echo "$$COMMIT_MESSAGE" | grep -q "\[force deploy\]"; then
+          echo "Found '[force deploy]' in commit message. Forcing deployment."
+          SHOULD_DEPLOY=true
         else
-          echo "Last deployed SHA: $$LAST_SHA"
+          echo "Commit message does not contain force flag. Checking for file changes..."
           
-          # 設定 git 配置
-          git config --global --add safe.directory /workspace
+          # 獲取上一次成功部署的 commit SHA
+          LAST_SHA=$$(gcloud run services describe ${_SERVICE_NAME} \
+            --region=${_REGION} \
+            --format="value(metadata.annotations.\"run.googleapis.com/commit-sha\")" \
+            2>/dev/null || echo "")
           
-          # 檢查文件變更
-          CHANGED_FILES=$$(git diff --name-only $$LAST_SHA..$COMMIT_SHA 2>/dev/null || echo "all")
-          echo "Changed files:"
-          echo "$$CHANGED_FILES"
-          
-          # 檢查是否有相關變更
-          SHOULD_DEPLOY=false
-          
-          # 檢查 src 目錄
-          if echo "$$CHANGED_FILES" | grep -q "src/"; then
-            echo "Found changes in src/ directory"
+          if [ -z "$$LAST_SHA" ]; then
+            echo "No previous deployment found, proceeding with full deployment."
             SHOULD_DEPLOY=true
-          fi
-          
-          # 檢查 pom.xml
-          if echo "$$CHANGED_FILES" | grep -q "pom.xml"; then
-            echo "Found changes in pom.xml"
-            SHOULD_DEPLOY=true
-          fi
-          
-          # 檢查 Dockerfile
-          if echo "$$CHANGED_FILES" | grep -q "Dockerfile"; then
-            echo "Found changes in Dockerfile"
-            SHOULD_DEPLOY=true
-          fi
-          
-          # 檢查配置文件
-          if echo "$$CHANGED_FILES" | grep -qE "\.(yml|yaml|properties)$$"; then
-            echo "Found changes in configuration files"
-            SHOULD_DEPLOY=true
-          fi
-          
-          if [ "$$SHOULD_DEPLOY" = true ]; then
-            echo "DEPLOY=true" > /workspace/deploy_decision.env
-            echo "Will proceed with deployment"
           else
-            echo "DEPLOY=false" > /workspace/deploy_decision.env
-            echo "No relevant changes detected, skipping deployment"
+            echo "Last deployed SHA: $$LAST_SHA"
+            CHANGED_FILES=$$(git diff --name-only $$LAST_SHA..$COMMIT_SHA 2>/dev/null || echo "all")
+            
+            # 檢查是否有相關變更
+            if echo "$$CHANGED_FILES" | grep -qE "^src/|^pom.xml|^Dockerfile|(\.(yml|yaml|properties))$$"; then
+              echo "Found changes in relevant files. Will proceed with deployment."
+              SHOULD_DEPLOY=true
+            fi
           fi
+        fi
+
+        if [ "$$SHOULD_DEPLOY" = true ]; then
+          echo "DEPLOY=true" > /workspace/deploy_decision.env
+          echo "Decision: Proceeding with deployment."
+        else
+          echo "DEPLOY=false" > /workspace/deploy_decision.env
+          echo "Decision: No relevant changes detected, skipping deployment."
         fi
     env:
       - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
 
+  # 後續步驟與您原先的檔案相同，只是加上了條件判斷
   # 步驟 2: 條件性建置容器映像檔
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
@@ -77,28 +65,11 @@ steps:
         if [ "$$DEPLOY" = "true" ]; then
           echo "Building Docker image..."
           docker build -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA .
-          echo "Docker build completed"
         else
-          echo "Skipping Docker build - no deployment needed"
+          echo "Skipping Docker build."
         fi
 
-  # 步驟 3: 登入 Artifact Registry（僅在需部署時）
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        source /workspace/deploy_decision.env
-        if [ "$$DEPLOY" = "true" ]; then
-          echo "Configuring docker auth for Artifact Registry..."
-          gcloud auth configure-docker ${_REGION}-docker.pkg.dev -q
-        else
-          echo "Skipping docker auth - no deployment needed"
-        fi
-    env:
-      - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
-
-  # 步驟 4: 條件性推送映像檔
+  # 步驟 3: 條件性推送映像檔
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args:
@@ -107,13 +78,13 @@ steps:
         source /workspace/deploy_decision.env
         if [ "$$DEPLOY" = "true" ]; then
           echo "Pushing Docker image..."
+          gcloud auth configure-docker ${_REGION}-docker.pkg.dev -q
           docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA
-          echo "Docker push completed"
         else
-          echo "Skipping Docker push - no deployment needed"
+          echo "Skipping Docker push."
         fi
 
-# 步驟 5: 條件性部署到 Cloud Run
+  # 步驟 4: 條件性部署到 Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -121,7 +92,7 @@ steps:
       - |
         source /workspace/deploy_decision.env
         if [ "$$DEPLOY" = "true" ]; then
-          echo "Deploying to Cloud Run with full database configuration..."
+          echo "Deploying to Cloud Run..."
           gcloud run deploy ${_SERVICE_NAME} \
             --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA \
             --region=${_REGION} \
@@ -132,9 +103,8 @@ steps:
             --set-env-vars="DB_NAME=${_DB_NAME},DB_USER=${_DB_USER}" \
             --set-secrets="DB_PASSWORD=${_DB_SECRET_NAME}:latest" \
             --update-annotations="run.googleapis.com/commit-sha=$COMMIT_SHA"
-          echo "Deployment completed successfully"
         else
-          echo "Skipping Cloud Run deployment - no changes detected"
+          echo "Skipping Cloud Run deployment."
         fi
     env:
       - 'CLOUDSDK_CORE_DISABLE_PROMPTS=1'
