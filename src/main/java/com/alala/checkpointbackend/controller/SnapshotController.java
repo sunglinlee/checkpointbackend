@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "snapshot", description = "快照相關API")
 @RestController
-@RequestMapping(value = "/api")
+@RequestMapping(value = "/api/api")
 @RequiredArgsConstructor
 public class SnapshotController {
     private final QuestionnaireService questionnaireService;

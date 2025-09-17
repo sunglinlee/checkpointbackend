@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "questionnaire", description = "問卷相關API")
 @RestController
-@RequestMapping(value = "/questionnaire")
+@RequestMapping(value = "/api/questionnaire")
 @RequiredArgsConstructor
 public class QuestionnaireController {
     private final QuestionnaireService questionnaireService;
